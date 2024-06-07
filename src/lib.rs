@@ -1,14 +1,15 @@
-use std::io::{self, prelude::*};
+use std::{
+    io::{self, prelude::*},
+    path::Path,
+};
 
 pub struct IOTemplate {
-    lines: Vec<String>
+    lines: Vec<String>,
 }
 
 impl IOTemplate {
     pub fn new() -> Self {
-        IOTemplate {
-            lines: Vec::new()
-        }
+        IOTemplate { lines: Vec::new() }
     }
 
     pub fn read_everything(&mut self) -> Result<(), io::Error> {
@@ -25,10 +26,14 @@ impl IOTemplate {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    "Input malformed.")
-                );
+                    "Input malformed.",
+                ));
             }
         }
+    }
+
+    pub fn read_everything_path(&mut self, _path: &Path) -> Result<(), io::Error> {
+        Ok(())
     }
 }
 
@@ -42,5 +47,10 @@ mod test {
         let io_template = IOTemplate::new();
 
         assert!(io_template.lines.len() == 0);
+    }
+
+    #[test]
+    fn test_reading_from_path() {
+        let io_template = IOTemplate::new();
     }
 }
