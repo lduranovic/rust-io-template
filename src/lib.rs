@@ -20,6 +20,15 @@ impl IOTemplate {
         }
     }
 
+    #[allow(dead_code)]
+    fn new_with_lines(lines: VecDeque<String>) -> Self {
+        IOTemplate {
+            lines,
+            current_line: None,
+            cursor: 0,
+        }
+    }
+
     fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
         reader.lines().map(|line| line.unwrap()).collect()
     }
@@ -142,5 +151,26 @@ mod test {
         let io_template = IOTemplate::new();
 
         assert!(io_template.lines.len() == 0);
+    }
+
+    #[test]
+    fn test_next_token() {
+        let mut lines = VecDeque::new();
+        lines.push_back("2 4 6 8\n".to_string());
+        lines.push_back("1 3 5 7\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_token: i32 = io_template.next_token().unwrap();
+        assert!(first_token == 2i32);
+
+        let first_line: String = io_template.next_line().unwrap();
+        assert!(first_line == "2 4 6 8\n".to_string());
+
+        let second_token: i32 = io_template.next_token().unwrap();
+        assert!(second_token == 1i32);
+
+        let third_token: i32 = io_template.next_token().unwrap();
+        assert!(third_token == 3i32);
     }
 }
