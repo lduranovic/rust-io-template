@@ -1,4 +1,4 @@
-# Simple Rust I/O Template
+# Rust I/O Template
 
 This is a toy project useful if you're looking to consume some Rust input in a
 quick and dirty way.
