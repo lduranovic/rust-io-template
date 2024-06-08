@@ -123,7 +123,7 @@ impl IOTemplate {
                     Ok(value) => Ok(value),
                     Err(_) => Err(io::Error::new(
                         io::ErrorKind::NotFound,
-                        "Could not parse",
+                        "Could not parse the given token.",
                     )),
                 }
             }
