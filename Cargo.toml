@@ -3,7 +3,7 @@ name = "rust_io_template"
 version = "0.1.0"
 edition = "2021"
 description = "A simple Rust I/O template"
-licence = "MIT"
+license = "MIT"
 
 [lib]
 path = "src/lib.rs"
