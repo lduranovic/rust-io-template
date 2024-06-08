@@ -20,24 +20,13 @@ impl IOTemplate {
         }
     }
 
-    pub fn read_everything(&mut self) -> Result<(), io::Error> {
-        let mut lock = io::stdin().lock();
-        let mut input = String::new();
-        loop {
-            if let Ok(num_read) = lock.read_line(&mut input) {
-                if num_read == 0 {
-                    return Ok(());
-                } else {
-                    self.lines.push_back(input.trim().to_owned());
-                    input.clear();
-                }
-            } else {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "Input malformed.",
-                ));
-            }
-        }
+    fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
+        reader.lines().map(|line| line.unwrap()).collect()
+    }
+
+    pub fn read_everything(&mut self) {
+        let lock = io::stdin().lock();
+        self.lines = Self::read_input(lock);
     }
 
     pub fn read_everything_from_path(
@@ -47,11 +36,7 @@ impl IOTemplate {
         let input_file = File::open(path)?;
         let reader = BufReader::new(input_file);
 
-        for line in reader.lines() {
-            let line = line?;
-            self.lines.push_back(line);
-        }
-
+        self.lines = Self::read_input(reader);
         Ok(())
     }
 
