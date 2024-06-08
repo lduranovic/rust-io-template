@@ -154,6 +154,25 @@ mod test {
     }
 
     #[test]
+    fn test_next_line() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first amazing line\n".to_string());
+        lines.push_back("second amazing line\n".to_string());
+        lines.push_back("third amazing line\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_line = io_template.next_line().unwrap();
+        assert!(first_line == "first amazing line\n".to_string());
+
+        let second_line = io_template.next_line().unwrap();
+        assert!(second_line == "second amazing line\n".to_string());
+
+        let third_line = io_template.next_line().unwrap();
+        assert!(third_line == "third amazing line\n".to_string());
+    }
+
+    #[test]
     fn test_next_token() {
         let mut lines = VecDeque::new();
         lines.push_back("2 4 6 8\n".to_string());
