@@ -1,15 +1,23 @@
 use std::{
-    collections::VecDeque, fs::File, io::{self, prelude::*, BufReader}, path::Path
+    collections::VecDeque,
+    fs::File,
+    io::{self, prelude::*, BufReader},
+    path::Path,
 };
 
 pub struct IOTemplate {
     lines: VecDeque<String>,
     current_line: Option<String>,
+    cursor: usize,
 }
 
 impl IOTemplate {
     pub fn new() -> Self {
-        IOTemplate { lines: VecDeque::new(), current_line: None }
+        IOTemplate {
+            lines: VecDeque::new(),
+            current_line: None,
+            cursor: 0,
+        }
     }
 
     pub fn read_everything(&mut self) -> Result<(), io::Error> {
@@ -20,7 +28,7 @@ impl IOTemplate {
                 if num_read == 0 {
                     return Ok(());
                 } else {
-                    self.lines.push_back(input.to_owned());
+                    self.lines.push_back(input.trim().to_owned());
                     input.clear();
                 }
             } else {
@@ -32,7 +40,10 @@ impl IOTemplate {
         }
     }
 
-    pub fn read_everything_from_path(&mut self, path: &Path) -> Result<(), io::Error> {
+    pub fn read_everything_from_path(
+        &mut self,
+        path: &Path,
+    ) -> Result<(), io::Error> {
         let input_file = File::open(path)?;
         let reader = BufReader::new(input_file);
 
@@ -44,17 +55,18 @@ impl IOTemplate {
         Ok(())
     }
 
-    pub fn next_line(&mut self) -> Option<String> {
+    pub fn next_line(&mut self) -> Result<String, io::Error> {
         if self.current_line.is_none() {
             if self.lines.is_empty() {
-                None
+                Err(io::Error::new(io::ErrorKind::NotFound, "No more lines."))
             } else {
-                self.lines.pop_front()
+                let line_to_return = self.lines.pop_front().unwrap();
+                Ok(line_to_return)
             }
         } else {
-            let to_return = self.current_line.to_owned();
+            let to_return = self.current_line.to_owned().unwrap();
             self.current_line = None;
-            to_return
+            Ok(to_return)
         }
     }
 
@@ -62,54 +74,73 @@ impl IOTemplate {
         if self.current_line.is_some() {
             Ok(false)
         } else {
+            self.cursor = 0;
             assert!(self.current_line.is_none());
             if self.lines.is_empty() {
-                // There are no lines to return.
-                Ok(false)
+                Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "No more lines left.",
+                ))
             } else {
-                // There is a line we could return.
                 let new_line = self.lines.pop_front();
-                self.current_line = new_line.to_owned();
+                self.current_line = new_line;
                 Ok(true)
             }
         }
     }
 
-    pub fn next_integer(&mut self) -> Option<i64> {
-        if self.lines.is_empty() {
-            None
-        } else {
-            let current_line: String = self.next_line().unwrap();
-            let mut tokens: VecDeque<String> = current_line
-                .trim()
-                .split_whitespace()
-                .map(|s| s.to_owned())
-                .collect();
-            if tokens.len() == 0 {
-                // In this case, this line should be removed from the
-                // collection of lines anyways. So no repair is needed.
-                None
-            } else {
-                // Get the first token.
-                let first_token = tokens.pop_front();
-
-                // Repair the collection of lines.
-                let new_line = tokens.iter().cloned().collect::<Vec<String>>().join(" ");
-                self.lines.push_front(new_line);
-
-                // Work on the first token. Try to return a number if it is a
-                // number.
-                if let Some(num) = first_token {
-                    if let Ok(to_return) = num.parse::<i64>() {
-                        Some(to_return)
+    pub fn next_token<T>(&mut self) -> Result<T, io::Error>
+    where
+        T: std::str::FromStr + std::fmt::Debug,
+    {
+        if self.current_line.is_some() {
+            let line: &str = &(self.current_line.as_ref().unwrap());
+            let tokens: Vec<&str> = line.split_whitespace().collect();
+            assert!(self.cursor <= tokens.len());
+            if self.cursor == tokens.len() {
+                self.current_line = None;
+                let next_current_line_result = self.next_current_line();
+                if next_current_line_result.is_ok() {
+                    let boolean_result: bool =
+                        next_current_line_result.unwrap();
+                    if boolean_result {
+                        self.next_token()
                     } else {
-                        // TODO: There should be a better check here. If this
-                        // does not go through, that means you messed up in
-                        // terms of reading the number.
-                        None
+                        panic!("This should never be reached.");
                     }
                 } else {
-                    None
+                    Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "End of input is likely reached.",
+                    ))
+                }
+            } else {
+                let current_token = tokens[self.cursor];
+                self.cursor += 1;
+
+                let parsing_result = current_token.parse::<T>();
+                match parsing_result {
+                    Ok(value) => Ok(value),
+                    Err(_) => Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "Could not parse",
+                    )),
+                }
+            }
+        } else {
+            let next_current_line_result = self.next_current_line();
+            if next_current_line_result.is_err() {
+                Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "No more lines left to process.",
+                ))
+            } else {
+                assert!(next_current_line_result.is_ok());
+                let return_value: bool = next_current_line_result.unwrap();
+                if return_value {
+                    self.next_token()
+                } else {
+                    panic!("Something went really wrong here.");
                 }
             }
         }
