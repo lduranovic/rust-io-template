@@ -40,7 +40,11 @@ impl IOTemplate {
     }
 
     fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
-        reader.lines().map(|line| line.unwrap()).map(|line| line.trim().to_owned()).collect()
+        reader
+            .lines()
+            .map(|line| line.unwrap())
+            .map(|line| line.trim().to_owned())
+            .collect()
     }
 
     pub fn read_everything(&mut self) {
@@ -162,6 +166,10 @@ impl IOTemplate {
         }
     }
 
+    pub fn next_word(&mut self) -> Result<String, io::Error> {
+        self.next_token::<String>()
+    }
+
     pub fn next_integer(&mut self) -> Result<i64, io::Error> {
         self.next_token::<i64>()
     }
@@ -193,7 +201,8 @@ impl IOTemplate {
                     self.word_position = 0;
                     self.next_char()
                 } else {
-                    let next_character: char = current_word.chars().nth(self.word_position).unwrap();
+                    let next_character: char =
+                        current_word.chars().nth(self.word_position).unwrap();
                     self.word_position += 1;
                     Ok(next_character)
                 }
@@ -349,6 +358,18 @@ mod test {
         assert!(error.is_err());
     }
 
-    // TODO: Add some tests for mixing the functions together. This is where I
-    // think problems might pop up.
+    #[test]
+    fn test_next_word() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first line\n".to_string());
+        lines.push_back("second line\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_word: String = io_template.next_word().unwrap();
+        assert!(&first_word == "first");
+
+        let second_word: String = io_template.next_word().unwrap();
+        assert!(&second_word == "line");
+    }
 }
