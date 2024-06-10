@@ -347,4 +347,7 @@ mod test {
         let error = io_template.next_char();
         assert!(error.is_err());
     }
+
+    // TODO: Add some tests for mixing the functions together. This is where I
+    // think problems might pop up.
 }
