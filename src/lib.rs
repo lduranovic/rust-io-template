@@ -15,6 +15,8 @@ pub struct IOTemplate {
     current_line: Option<String>,
     /// Tells us which token (word really) we are in, currently.
     cursor: usize,
+    /// Tells us at which character (of the given word) we are.
+    word_position: usize,
 }
 
 impl IOTemplate {
@@ -23,6 +25,7 @@ impl IOTemplate {
             lines: VecDeque::new(),
             current_line: None,
             cursor: 0,
+            word_position: 0,
         }
     }
 
@@ -32,6 +35,7 @@ impl IOTemplate {
             lines,
             current_line: None,
             cursor: 0,
+            word_position: 0,
         }
     }
 
@@ -75,6 +79,7 @@ impl IOTemplate {
             Ok(false)
         } else {
             self.cursor = 0;
+            self.word_position = 0;
             assert!(self.current_line.is_none());
             if self.lines.is_empty() {
                 Err(io::Error::new(
@@ -153,6 +158,10 @@ impl IOTemplate {
     pub fn next_double(&mut self) -> Result<f64, io::Error> {
         self.next_token::<f64>()
     }
+
+    pub fn next_char(&mut self) -> Result<char, io::Error> {
+        Ok('a')
+    }
 }
 
 #[cfg(test)]
@@ -224,5 +233,20 @@ mod test {
 
         let next_line = io_template.next_line().unwrap();
         println!("This is the current line: {next_line}");
+    }
+
+    // TODO: Make this test more comprehensive.
+    #[test]
+    fn test_next_char() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first line\n".to_string());
+        lines.push_back("second line\n".to_string());
+        lines.push_back("1 2 3 4\n".to_string());
+        lines.push_back("5 6 7 8\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_character: char = io_template.next_char().unwrap();
+        assert!(first_character == 'f');
     }
 }
