@@ -189,6 +189,7 @@ impl IOTemplate {
                 let current_word_len: usize = current_word.len();
                 if self.word_position >= current_word_len {
                     self.cursor += 1;
+                    self.word_position = 0;
                     self.next_char()
                 } else {
                     let next_character: char = current_word.chars().nth(self.word_position).unwrap();
@@ -313,6 +314,36 @@ mod test {
         assert!(first == 's');
         let second = io_template.next_char().unwrap();
         assert!(second == 'h');
+        let error = io_template.next_char();
+        assert!(error.is_err());
+
+        // Start off again.
+        let mut lines = VecDeque::new();
+        lines.push_back("fst line\n".to_string());
+        lines.push_back("z\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        // Let's try to use `next_char()` to exhaust the first line fully. Make
+        // sure here that all the characters are consistent.
+        let first = io_template.next_char().unwrap();
+        assert!(first == 'f');
+        let second = io_template.next_char().unwrap();
+        assert!(second == 's');
+        let third = io_template.next_char().unwrap();
+        assert!(third == 't');
+
+        // Go through the second word.
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+
+        // First character on the second line makes sense.
+        let first_character_second_line = io_template.next_char().unwrap();
+        assert!(first_character_second_line == 'z');
+
+        // You cannot call this anymore.
         let error = io_template.next_char();
         assert!(error.is_err());
     }
