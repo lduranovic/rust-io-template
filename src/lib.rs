@@ -162,6 +162,10 @@ impl IOTemplate {
         }
     }
 
+    pub fn next_word(&mut self) -> Result<String, io::Error> {
+        self.next_token::<String>()
+    }
+
     pub fn next_integer(&mut self) -> Result<i64, io::Error> {
         self.next_token::<i64>()
     }
@@ -349,6 +353,18 @@ mod test {
         assert!(error.is_err());
     }
 
-    // TODO: Add some tests for mixing the functions together. This is where I
-    // think problems might pop up.
+    #[test]
+    fn test_next_word() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first line\n".to_string());
+        lines.push_back("second line\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_word: String = io_template.next_word().unwrap();
+        assert!(&first_word == "first");
+
+        let second_word: String = io_template.next_word().unwrap();
+        assert!(&second_word == "line");
+    }
 }
