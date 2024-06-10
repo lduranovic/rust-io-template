@@ -170,6 +170,7 @@ impl IOTemplate {
         self.next_token::<f64>()
     }
 
+    /// Allows the user to get access to the next character in the input.
     pub fn next_char(&mut self) -> Result<char, io::Error> {
         if self.current_line.is_some() {
             let line: &str = &(self.current_line.as_ref().unwrap());
