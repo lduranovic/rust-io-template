@@ -1,6 +1,6 @@
 [package]
 name = "rust_io_template"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 description = "A simple Rust I/O template"
 license = "MIT"
