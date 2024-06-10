@@ -15,6 +15,8 @@ pub struct IOTemplate {
     current_line: Option<String>,
     /// Tells us which token (word really) we are in, currently.
     cursor: usize,
+    /// Tells us at which character (of the given word) we are.
+    word_position: usize,
 }
 
 impl IOTemplate {
@@ -23,6 +25,7 @@ impl IOTemplate {
             lines: VecDeque::new(),
             current_line: None,
             cursor: 0,
+            word_position: 0,
         }
     }
 
@@ -32,11 +35,12 @@ impl IOTemplate {
             lines,
             current_line: None,
             cursor: 0,
+            word_position: 0,
         }
     }
 
     fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
-        reader.lines().map(|line| line.unwrap()).collect()
+        reader.lines().map(|line| line.unwrap()).map(|line| line.trim().to_owned()).collect()
     }
 
     pub fn read_everything(&mut self) {
@@ -60,10 +64,20 @@ impl IOTemplate {
             if self.lines.is_empty() {
                 Err(io::Error::new(io::ErrorKind::NotFound, "No more lines."))
             } else {
+                // Reset the other state.
+                self.cursor = 0;
+                self.word_position = 0;
+
+                // Return the first line.
                 let line_to_return = self.lines.pop_front().unwrap();
                 Ok(line_to_return)
             }
         } else {
+            // Reset the other state.
+            self.cursor = 0;
+            self.word_position = 0;
+
+            // Return the current line.
             let to_return = self.current_line.to_owned().unwrap();
             self.current_line = None;
             Ok(to_return)
@@ -74,7 +88,9 @@ impl IOTemplate {
         if self.current_line.is_some() {
             Ok(false)
         } else {
+            // TODO: Not sure if we really want this here.
             self.cursor = 0;
+            self.word_position = 0;
             assert!(self.current_line.is_none());
             if self.lines.is_empty() {
                 Err(io::Error::new(
@@ -153,6 +169,46 @@ impl IOTemplate {
     pub fn next_double(&mut self) -> Result<f64, io::Error> {
         self.next_token::<f64>()
     }
+
+    /// Allows the user to get access to the next character in the input.
+    pub fn next_char(&mut self) -> Result<char, io::Error> {
+        if self.current_line.is_some() {
+            let line: &str = &(self.current_line.as_ref().unwrap());
+            let tokens: Vec<&str> = line.split_whitespace().collect();
+            assert!(self.cursor <= tokens.len());
+            if self.cursor >= tokens.len() {
+                self.current_line = None;
+                match self.next_current_line() {
+                    Ok(bool_value) => {
+                        assert!(bool_value);
+                        self.next_char()
+                    }
+                    Err(error) => Err(error),
+                }
+            } else {
+                let current_word: &str = tokens[self.cursor];
+                let current_word_len: usize = current_word.len();
+                if self.word_position >= current_word_len {
+                    self.cursor += 1;
+                    self.word_position = 0;
+                    self.next_char()
+                } else {
+                    let next_character: char = current_word.chars().nth(self.word_position).unwrap();
+                    self.word_position += 1;
+                    Ok(next_character)
+                }
+            }
+        } else {
+            self.current_line = None;
+            match self.next_current_line() {
+                Ok(bool_value) => {
+                    assert!(bool_value);
+                    self.next_char()
+                }
+                Err(error) => Err(error),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -225,4 +281,74 @@ mod test {
         let next_line = io_template.next_line().unwrap();
         println!("This is the current line: {next_line}");
     }
+
+    #[test]
+    fn test_next_char() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first line\n".to_string());
+        lines.push_back("second line\n".to_string());
+        lines.push_back("sh\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let first_character: char = io_template.next_char().unwrap();
+        assert!(first_character == 'f');
+        let second_character: char = io_template.next_char().unwrap();
+        assert!(second_character == 'i');
+
+        // Skip to the next line to make things more interesting.
+        let first_line = io_template.next_line().unwrap();
+        assert!(first_line == "first line\n".to_string());
+
+        // Skip the first two characters now.
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+
+        let third_character: char = io_template.next_char().unwrap();
+        assert!(third_character == 'c');
+
+        // Skip to the last line.
+        let _ = io_template.next_line();
+
+        // Skip the first two characters.
+        let first = io_template.next_char().unwrap();
+        assert!(first == 's');
+        let second = io_template.next_char().unwrap();
+        assert!(second == 'h');
+        let error = io_template.next_char();
+        assert!(error.is_err());
+
+        // Start off again.
+        let mut lines = VecDeque::new();
+        lines.push_back("fst line\n".to_string());
+        lines.push_back("z\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        // Let's try to use `next_char()` to exhaust the first line fully. Make
+        // sure here that all the characters are consistent.
+        let first = io_template.next_char().unwrap();
+        assert!(first == 'f');
+        let second = io_template.next_char().unwrap();
+        assert!(second == 's');
+        let third = io_template.next_char().unwrap();
+        assert!(third == 't');
+
+        // Go through the second word.
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+        let _ = io_template.next_char();
+
+        // First character on the second line makes sense.
+        let first_character_second_line = io_template.next_char().unwrap();
+        assert!(first_character_second_line == 'z');
+
+        // You cannot call this anymore.
+        let error = io_template.next_char();
+        assert!(error.is_err());
+    }
+
+    // TODO: Add some tests for mixing the functions together. This is where I
+    // think problems might pop up.
 }
