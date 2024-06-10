@@ -40,7 +40,11 @@ impl IOTemplate {
     }
 
     fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
-        reader.lines().map(|line| line.unwrap()).map(|line| line.trim().to_owned()).collect()
+        reader
+            .lines()
+            .map(|line| line.unwrap())
+            .map(|line| line.trim().to_owned())
+            .collect()
     }
 
     pub fn read_everything(&mut self) {
@@ -197,7 +201,8 @@ impl IOTemplate {
                     self.word_position = 0;
                     self.next_char()
                 } else {
-                    let next_character: char = current_word.chars().nth(self.word_position).unwrap();
+                    let next_character: char =
+                        current_word.chars().nth(self.word_position).unwrap();
                     self.word_position += 1;
                     Ok(next_character)
                 }
