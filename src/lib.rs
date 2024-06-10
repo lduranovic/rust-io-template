@@ -5,9 +5,15 @@ use std::{
     path::Path,
 };
 
+/// This is the main structure that this library exports. The user should
+/// instantiate the structure and then call methods on it in order to process
+/// input.
 pub struct IOTemplate {
+    /// A deque of lines that the `IOTemplate` object read in.
     lines: VecDeque<String>,
+    /// Line we are currently processing from the input.
     current_line: Option<String>,
+    /// Tells us which token (word really) we are in, currently.
     cursor: usize,
 }
 
@@ -83,7 +89,7 @@ impl IOTemplate {
         }
     }
 
-    pub fn next_token<T>(&mut self) -> Result<T, io::Error>
+    fn next_token<T>(&mut self) -> Result<T, io::Error>
     where
         T: std::str::FromStr + std::fmt::Debug,
     {
@@ -139,6 +145,14 @@ impl IOTemplate {
             }
         }
     }
+
+    pub fn next_integer(&mut self) -> Result<i64, io::Error> {
+        self.next_token::<i64>()
+    }
+
+    pub fn next_double(&mut self) -> Result<f64, io::Error> {
+        self.next_token::<f64>()
+    }
 }
 
 #[cfg(test)]
@@ -191,5 +205,24 @@ mod test {
 
         let third_token: i32 = io_template.next_token().unwrap();
         assert!(third_token == 3i32);
+    }
+
+    #[test]
+    fn test_next_integer() {
+        let mut lines = VecDeque::new();
+        lines.push_back("first line\n".to_string());
+        lines.push_back("1 2 3 4\n".to_string());
+        lines.push_back("second line\n".to_string());
+        lines.push_back("5 6 7 8\n".to_string());
+
+        let mut io_template = IOTemplate::new_with_lines(lines);
+
+        let bad_integer_result = io_template.next_integer();
+        assert!(bad_integer_result.is_err());
+
+        let _ = io_template.next_current_line();
+
+        let next_line = io_template.next_line().unwrap();
+        println!("This is the current line: {next_line}");
     }
 }
