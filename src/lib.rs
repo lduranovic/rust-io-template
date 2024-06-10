@@ -1,3 +1,7 @@
+//! This library introduces a simple Rust I/O template. The template under the
+//! hood is a Rust structure whose aim is to make quick and dirty I/O
+//! processing much easier for the average developer.
+
 use std::{
     collections::VecDeque,
     fs::File,
@@ -19,7 +23,9 @@ pub struct IOTemplate {
     word_position: usize,
 }
 
+/// The main structure that the user should create before processing any input.
 impl IOTemplate {
+    /// Create a new empty instance of `IOTemplate`.
     pub fn new() -> Self {
         IOTemplate {
             lines: VecDeque::new(),
@@ -29,6 +35,8 @@ impl IOTemplate {
         }
     }
 
+    /// Create a new instance of `IOTemplate` whose `lines` are the input
+    /// `lines`.
     #[allow(dead_code)]
     fn new_with_lines(lines: VecDeque<String>) -> Self {
         IOTemplate {
@@ -39,6 +47,7 @@ impl IOTemplate {
         }
     }
 
+    /// Internal function for reading in lines of input.
     fn read_input<R: BufRead>(reader: R) -> VecDeque<String> {
         reader
             .lines()
@@ -47,11 +56,17 @@ impl IOTemplate {
             .collect()
     }
 
+    /// The default function for taking in input that most users will want. It
+    /// reads all the lines provided to the overall Rust binary from `stdin`,
+    /// and stores them inside the I/O template object.
     pub fn read_everything(&mut self) {
         let lock = io::stdin().lock();
         self.lines = Self::read_input(lock);
     }
 
+    /// This method is similar to `read_everything`, but allows the user to
+    /// provide a specific path from which the lines of input are supposed to
+    /// come.
     pub fn read_everything_from_path(
         &mut self,
         path: &Path,
@@ -63,6 +78,10 @@ impl IOTemplate {
         Ok(())
     }
 
+    /// Get the next line of input. The users should note that this changes the
+    /// internal state of the template object. Once the user calls this, the
+    /// line that is returned *will not be available* in the template object
+    /// anymore.
     pub fn next_line(&mut self) -> Result<String, io::Error> {
         if self.current_line.is_none() {
             if self.lines.is_empty() {
@@ -88,6 +107,9 @@ impl IOTemplate {
         }
     }
 
+    /// Internal function for updating the `current_line` pointer, so that it
+    /// points to the next element in `lines`, which is the collection of lines
+    /// actually maintained by the template object.
     fn next_current_line(&mut self) -> Result<bool, io::Error> {
         if self.current_line.is_some() {
             Ok(false)
@@ -109,6 +131,7 @@ impl IOTemplate {
         }
     }
 
+    /// Internal function for getting the next token from the current line.
     fn next_token<T>(&mut self) -> Result<T, io::Error>
     where
         T: std::str::FromStr + std::fmt::Debug,
@@ -166,14 +189,23 @@ impl IOTemplate {
         }
     }
 
+    /// Lets the user get access to the next word in the current line, as a
+    /// `String`. Note that this function will not update the current line,
+    /// even if the word returned is the last word in the current line.
     pub fn next_word(&mut self) -> Result<String, io::Error> {
         self.next_token::<String>()
     }
 
+    /// Lets the user get access to the next word in the current line, as an
+    /// `i64`. Note that this function will not update the current line, even
+    /// if the word returned is the last word in the current line.
     pub fn next_integer(&mut self) -> Result<i64, io::Error> {
         self.next_token::<i64>()
     }
 
+    /// Lets the user get access to the next word in the current line, as an
+    /// `f64`. Note that this function will not update the current line, even
+    /// if the word returned is the last word in the current line.
     pub fn next_double(&mut self) -> Result<f64, io::Error> {
         self.next_token::<f64>()
     }
